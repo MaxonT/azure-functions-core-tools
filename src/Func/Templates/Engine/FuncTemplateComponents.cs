@@ -4,6 +4,7 @@
 using Azure.Functions.Cli.Templates.PostActions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Azure.Functions.Cli.Templates.Packages;
 using Microsoft.TemplateEngine.Abstractions;
 using Microsoft.TemplateEngine.Abstractions.TemplatePackage;
 
@@ -67,6 +68,10 @@ internal static class FuncTemplateComponents
         {
             ArgumentNullException.ThrowIfNull(services);
             services.TryAddSingleton<ITemplaterFactory, TemplaterFactory>();
+            services.TryAddSingleton<TemplateHiveTransaction>();
+            services.TryAddSingleton<TemplatePackageValidator>();
+            services.TryAddSingleton<TemplatePackageVerifier>();
+            services.TryAddSingleton<TemplatePackageService>();
             services.TryAddSingleton<IWorkloadTemplateSource, WorkloadTemplateSource>();
             services.TryAddSingleton<PostActionDispatcher>();
             services.AddTemplateComponent<PostActionDispatcher, PostActionDispatcher>();
