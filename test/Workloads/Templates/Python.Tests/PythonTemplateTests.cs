@@ -22,7 +22,7 @@ public sealed class PythonTemplateTests : IAsyncLifetime
     [InlineData("timertrigger", "item", "Azure.Functions.Cli.Python.TimerTrigger.Python")]
     public async Task Templates_AreDiscoveredFromWorkload(string shortName, string type, string identity)
     {
-        ITemplateInfo template = await _host.GetTemplateAsync(shortName, TestContext.Current.CancellationToken);
+        ITemplateInfo template = await _host.GetTemplateAsync(shortName, cancellationToken: TestContext.Current.CancellationToken);
 
         template.Identity.Should().Be(identity);
         template.TagsCollection["type"].Should().Be(type);
@@ -33,7 +33,7 @@ public sealed class PythonTemplateTests : IAsyncLifetime
     [Fact]
     public async Task Project_GeneratesUsableProjectWithoutTemplateMetadata()
     {
-        ITemplateInfo template = await _host.GetTemplateAsync("func-python", TestContext.Current.CancellationToken);
+        ITemplateInfo template = await _host.GetTemplateAsync("func-python", cancellationToken: TestContext.Current.CancellationToken);
 
         ITemplateCreationResult result = await _host.InstantiateAsync(
             template, "SampleProject", cancellationToken: TestContext.Current.CancellationToken);
@@ -83,7 +83,7 @@ public sealed class PythonTemplateTests : IAsyncLifetime
         }
 
         await using var host = new TemplateTestHost(packageRoot);
-        ITemplateInfo template = await host.GetTemplateAsync("func-python", TestContext.Current.CancellationToken);
+        ITemplateInfo template = await host.GetTemplateAsync("func-python", cancellationToken: TestContext.Current.CancellationToken);
 
         ITemplateCreationResult result = await host.InstantiateAsync(
             template, "SampleProject", cancellationToken: TestContext.Current.CancellationToken);
@@ -103,7 +103,7 @@ public sealed class PythonTemplateTests : IAsyncLifetime
     [InlineData("admin", "ADMIN")]
     public async Task HttpTrigger_AuthorizationLevel_GeneratesNamedBlueprint(string authorization, string expected)
     {
-        ITemplateInfo template = await _host.GetTemplateAsync("httptrigger", TestContext.Current.CancellationToken);
+        ITemplateInfo template = await _host.GetTemplateAsync("httptrigger", cancellationToken: TestContext.Current.CancellationToken);
 
         ITemplateCreationResult result = await _host.InstantiateAsync(
             template, "Order-API", new Dictionary<string, string?> { ["AuthorizationLevel"] = authorization },
@@ -120,7 +120,7 @@ public sealed class PythonTemplateTests : IAsyncLifetime
     [Fact]
     public async Task HttpTrigger_InvalidAuthorizationLevel_IsRejected()
     {
-        ITemplateInfo template = await _host.GetTemplateAsync("httptrigger", TestContext.Current.CancellationToken);
+        ITemplateInfo template = await _host.GetTemplateAsync("httptrigger", cancellationToken: TestContext.Current.CancellationToken);
 
         ITemplateCreationResult result = await _host.InstantiateAsync(
             template, "Example", new Dictionary<string, string?> { ["AuthorizationLevel"] = "invalid" },
@@ -132,7 +132,7 @@ public sealed class PythonTemplateTests : IAsyncLifetime
     [Fact]
     public async Task HttpTrigger_AuthorizationLevel_DeclaresHostAliases()
     {
-        ITemplateInfo template = await _host.GetTemplateAsync("httptrigger", TestContext.Current.CancellationToken);
+        ITemplateInfo template = await _host.GetTemplateAsync("httptrigger", cancellationToken: TestContext.Current.CancellationToken);
 
         template.HostConfigPlace.Should().EndWith("func.host.json");
         string hostPath = Path.Combine(AppContext.BaseDirectory, "content", "templates", "httptrigger", ".template.config", "func.host.json");
@@ -145,9 +145,9 @@ public sealed class PythonTemplateTests : IAsyncLifetime
     [Fact]
     public async Task Items_CoexistInGeneratedProjectWithoutReplacingApplication()
     {
-        ITemplateInfo project = await _host.GetTemplateAsync("func-python", TestContext.Current.CancellationToken);
-        ITemplateInfo http = await _host.GetTemplateAsync("httptrigger", TestContext.Current.CancellationToken);
-        ITemplateInfo timer = await _host.GetTemplateAsync("timertrigger", TestContext.Current.CancellationToken);
+        ITemplateInfo project = await _host.GetTemplateAsync("func-python", cancellationToken: TestContext.Current.CancellationToken);
+        ITemplateInfo http = await _host.GetTemplateAsync("httptrigger", cancellationToken: TestContext.Current.CancellationToken);
+        ITemplateInfo timer = await _host.GetTemplateAsync("timertrigger", cancellationToken: TestContext.Current.CancellationToken);
         ITemplateCreationResult projectResult = await _host.InstantiateAsync(
             project, "SampleProject", cancellationToken: TestContext.Current.CancellationToken);
         projectResult.Status.Should().Be(CreationResultStatus.Success, projectResult.ErrorMessage);
