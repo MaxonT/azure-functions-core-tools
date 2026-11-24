@@ -68,7 +68,6 @@ internal static class FuncTemplateComponents
         {
             ArgumentNullException.ThrowIfNull(services);
             services.TryAddSingleton<ITemplaterFactory, TemplaterFactory>();
-            services.TryAddSingleton<TemplateHiveTransaction>();
             services.TryAddSingleton<TemplatePackageValidator>();
             services.TryAddSingleton<TemplatePackageVerifier>();
             services.TryAddSingleton<TemplatePackageService>();

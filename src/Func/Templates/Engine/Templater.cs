@@ -56,6 +56,9 @@ internal class Templater : IDisposable
     internal virtual Task<IEnumerable<ITemplateInfo>> GetTemplatesAsync(ITemplatePackage package, CancellationToken cancellationToken)
         => _packageManager.GetTemplatesAsync(package, cancellationToken);
 
+    internal virtual Task RefreshAsync(CancellationToken cancellationToken)
+        => _packageManager.RebuildTemplateCacheAsync(cancellationToken);
+
     internal virtual async Task<InstallResult> InstallAsync(InstallRequest request, CancellationToken cancellationToken)
     {
         IManagedTemplatePackageProvider provider = _packageManager.GetBuiltInManagedProvider(InstallationScope.Global);
@@ -63,7 +66,7 @@ internal class Templater : IDisposable
         return results.Single();
     }
 
-    internal async Task<UninstallResult> UninstallAsync(IManagedTemplatePackage package, CancellationToken cancellationToken)
+    internal virtual async Task<UninstallResult> UninstallAsync(IManagedTemplatePackage package, CancellationToken cancellationToken)
     {
         IReadOnlyList<UninstallResult> results = await package.ManagedProvider.UninstallAsync([package], cancellationToken);
         return results.Single();
