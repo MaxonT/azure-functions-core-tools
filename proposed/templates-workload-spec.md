@@ -1,42 +1,15 @@
 # Template Engine and Packages
 
-## Purpose
+Navigation gateway, not an approved package or integration specification. Start with [Templates Architecture](../docs/templates/README.md), then the [proposed behavior contract](../docs/templates/architecture.md) and [implementation baseline and authorization gates](../docs/templates/implementation.md).
 
-Azure Functions templates are discovered and invoked through the
-Microsoft.TemplateEngine integration in `src/Func/Templates/Engine`. Template
-packages and their registrations are managed by Template Engine in the shared
-func settings hive. They are separate from language worker workloads and
-extension bundles.
+## Current boundaries
 
-## Engine integration
+[TemplaterFactory](../src/Func/Templates/Engine/TemplaterFactory.cs) creates a command-scoped `Templater` in the existing CLI-home `templates` hive. [Templater](../src/Func/Templates/Engine/Templater.cs) lists installed templates as `FuncTemplateInfo` values that retain the engine's `ITemplateInfo` and parsed `func.host.json` metadata. Catalog and parameter projection, and raw constraint reader/matcher/evaluator helpers, are not part of the current foundation. Constraint-aware command resolution and invocation are not wired. Project/item kinds use `tags.type`; engine types stay inside the integration.
 
-- `ITemplaterFactory` creates a command-scoped engine session for a resolved
-  `TemplateEngineContext`.
-- `Templater` currently lists installed templates by type.
-- `TemplateCatalogProjector` maps engine template and package metadata into
-  func-owned catalog entries, including `tags.type`, language, identity,
-  package information, func host metadata, and parameter definitions.
-- Func constraint declarations and their evaluation rules are implemented
-  under `src/Func/Templates/Engine` and documented in
-  `docs/template-engine-constraints`.
-- Raw Template Engine types remain internal to the engine integration.
+[TemplateFixtures](../test/Func.Tests/Templates/TemplateFixtures.cs) installs local content into isolated test hives. Workloads can declare a `templateRoot` that [WorkloadTemplatePackageProviderFactory](../src/Func/Templates/Engine/WorkloadTemplatePackageProviderFactory.cs) exposes to the engine through [WorkloadTemplateSource](../src/Func/Templates/Engine/WorkloadTemplateSource.cs), without a separate CLI-hive installation. The .NET workload packages its project, HTTP, and Timer templates under `content/templates`, declares that path as `templateRoot`, and exposes it to installed-workload discovery. The working .NET initializer uses a separate `dotnet new` hive.
 
-## Template kinds and command use
+The CLI hive is used for engine settings, managed-package state, and the persistent template cache even when workload payloads live elsewhere. Source changes and strictly newer timestamps trigger lazy engine rebuilds; ordinary commands reuse unchanged cache data. Duplicate identities currently follow native engine precedence; the CLI adds no highest-package-version selection or duplicate rejection.
 
-Templates use `tags.type` values `item` or `project`. The `func new` command
-is designed to consume item templates, while project-template execution belongs
-to the `func init` design. Missing or unrecognized type values do not identify
-a usable template kind.
+Current acquisition scope is workload-provided core templates, which are versioned and serviced with their workload ([versioning model](../docs/templates/architecture.md#core-and-independently-packaged-template-versioning)). Future `func templates` commands will delegate standalone NuGet package acquisition and lifecycle to the engine's managed provider in the same hive. Known-package-ID installation does not need remote search. The older `func new install/update/uninstall` proposal is historical.
 
-The current `func new` command is not yet connected to template selection and
-invocation. It reports scaffolding and listing as unavailable with a nonzero
-exit code before changing project files. Its planned command flow is described
-in `docs/func-new-execution`; package operations are described in
-`docs/template-package-install`.
-
-## Package and workload boundaries
-
-Template package discovery and registration use Microsoft.TemplateEngine.
-Language workers and extension bundles continue to use the Functions workload
-system. Setup does not resolve or install template packages. This keeps
-template availability and worker/runtime setup as independent concerns.
+Future standalone package-type/feed/update policy remains separate work. Functions-specific constraint validation is a separate increment and is not implemented yet. This gateway adds no discovery-time installation, new registry, package manager or lifecycle commands.

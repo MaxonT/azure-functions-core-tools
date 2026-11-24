@@ -48,10 +48,10 @@ internal sealed class FirstRunCoordinator(
     // managing their setup directly. `init` still prompts, but the unavailable
     // `new` command must report its failure without running setup.
     private static readonly HashSet<string> _skippedRootCommands =
-        new(StringComparer.OrdinalIgnoreCase) { "new", "setup", "update", "version", "workload" };
+        [with(StringComparer.OrdinalIgnoreCase), "new", "setup", "update", "version", "workload"];
 
     private static readonly HashSet<string> _skippedTokens =
-        new(StringComparer.OrdinalIgnoreCase) { "--help", "-h", "-?", "/?", "--version", "-v" };
+        [with(StringComparer.OrdinalIgnoreCase), "--help", "-h", "-?", "/?", "--version", "-v"];
 
     // CommandNameResolver returns these when the user didn't actually type a
     // command name: "help" for bare `func`, "version" for `func --verbose`,
@@ -59,7 +59,7 @@ internal sealed class FirstRunCoordinator(
     // those cases, but the post-setup "Re-run `func <name>`" hint doesn't make
     // sense (re-run what?), so we short-circuit with a generic message instead.
     private static readonly HashSet<string> _commandNameSentinels =
-        new(StringComparer.OrdinalIgnoreCase) { "help", "version", "unknown" };
+        [with(StringComparer.OrdinalIgnoreCase), "help", "version", "unknown"];
 
     private readonly IInteractionService _interaction = interaction ?? throw new ArgumentNullException(nameof(interaction));
     private readonly IFirstRunStateStore _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
@@ -174,7 +174,7 @@ internal sealed class FirstRunCoordinator(
         // After a successful setup we always short-circuit the user's original
         // command. The workload loader snapshots templates/bundles/host metadata
         // at host build time, so anything the user typed (init, run,
-        // start, quickstart, ...) is operating against the pre-install view
+        // start, ...) is operating against the pre-install view
         // and would either fail outright ("no project here") or silently use
         // stale metadata. Asking them to re-run is the only safe answer until
         // we add an in-process reload.

@@ -65,9 +65,6 @@ func
 │   ├── list [path]       List available profiles
 │   ├── show <name> [path]  Show profile details
 │   └── set <name> [path]   Set the project default profile
-├── quickstart [path]     Scaffold a project from a CDN-hosted template
-│   ├── list [path]       List available quickstart templates
-│   └── info <id> [path]  Show details for a quickstart template
 ├── workload
 │   └── list              List installed workloads
 ├── version (hidden)      Print version info
@@ -77,6 +74,36 @@ func
 ```
 
 Workloads can add their own subcommands by calling `builder.RegisterCommand(...)` from inside `IWorkload.Configure` (see [building-a-workload.md](building-a-workload.md)). Workload commands are described in parser-independent terms via `FuncCommand` / `FuncCommandOption` / `FuncCommandArgument`; the host wraps each one in an internal `ExternalCommand` adapter that translates the descriptors to `System.CommandLine` and tracks the registering workload for diagnostics.
+
+`func help` shows general help. Supply a command path, such as `func help workload install`,
+to show the same command help as `func workload install --help` without executing the command.
+Paths can include nested subcommands and aliases; an unknown path reports an error and exits with code 1.
+
+### Planned template package commands
+
+The proposed [template package management design](templates/package-management.md)
+would add a top-level group separate from function generation:
+
+```text
+func templates
+├── search [query]        Search template NuGet packages
+├── install <package-id>  Install a template NuGet package
+└── uninstall <package-id>  Uninstall a managed template package
+```
+
+Like workload commands, search and install use one feed: `--source`, then
+`FUNC_CLI_TEMPLATES_SOURCE`, then nuget.org. They do not read `NuGet.Config`.
+Install prevalidates the downloaded archive, then delegates package storage and
+registration to the engine's managed provider. Preflight checks require matching
+package identity/version, the `FuncTemplate` package type with no workload type,
+valid `func.host.json` metadata, and at least one template identity; NuGet and
+Microsoft.TemplateEngine handle archive path safety and template-format
+validation. On replacement, the CLI keeps a temporary backup to restore through
+that provider if installation or discovery fails. The engine would record a
+local NuGet package without `NuGetSource`; matching ID/version is a no-op
+regardless of feed. These commands would not require an initialized Functions
+project. They are not yet available; the NuGet catalog, package lifecycle, and
+CLI integration layers must ship first.
 
 ## In-place CLI updates
 
@@ -203,7 +230,7 @@ interaction.WriteLine(l => l
 
 `RunWithProgressAsync` exposes an `IProgressContext` to the action, which long-running operations can use to update the description, set/report numeric progress, or increment. The Spectre implementation renders a live progress bar; in non-interactive mode each description change is written as a separate line so logs remain readable.
 
-Confirmation prompts use stdout input and do not require ANSI or stderr capabilities. Init and quickstart use an interactive default of No and an unavailable-input fallback of Yes only for explicit `--force` operations. Cancellation and input errors propagate rather than approving the operation.
+Confirmation prompts use stdout input and do not require ANSI or stderr capabilities. Init uses an interactive default of No and an unavailable-input fallback of Yes only for explicit `--force` operations. Cancellation and input errors propagate rather than approving the operation.
 
 ### `IsInteractive` Property
 
@@ -325,7 +352,7 @@ The telemetry instrumentation key is injected at build time via `eng/build/Telem
 
 ## CLI Home Directory
 
-The CLI persists configuration, profiles, caches, the version-check stamp, the quickstart manifest cache, workloads, and the dotnet template hive under a single "func home" root. By default this is `~/.azure-functions/`.
+The CLI persists configuration, profiles, caches, the version-check stamp, workloads, and the dotnet template hive under a single "func home" root. By default this is `~/.azure-functions/`.
 
 - **Override**: set `FUNC_CLI_HOME` to an absolute path to relocate the entire home (handy for sandboxed CI, devcontainers, or per-user installs that can't write the user profile).
 - The env var is read directly (not via `IConfiguration`) so host config, global config, or project `.func/config.json` can't redirect it.
@@ -346,23 +373,6 @@ If a newer version is found, a notice is printed after the command completes.
 ## HTTP Client Defaults
 
 `HttpClientDefaults.AddCliHttpDefaults()` applies a `User-Agent` header (`AzureFunctionsCli/{version} ({os})`) to every `IHttpClientFactory` client. Individual features configure their own timeouts per-client.
-
-## Quickstart Manifest
-
-`func quickstart` scaffolds a project from a CDN-hosted template manifest.
-
-```text
-1. IQuickstartManifestService.GetManifestAsync()
-   ├── Fresh cache (< 24h) → return cached manifest, skip network
-   ├── CDN fetch with ETag/If-None-Match → 200 (cache + return) or 304 (return cached)
-   └── Network failure → stale cache fallback (any age), or error if no cache
-2. QuickstartManifest.Filter(language, resource, iac, search) → filtered entries
-3. Command scaffolds selected template
-```
-
-- **Cache**: `~/.azure-functions/quickstart/` (manifest JSON + ETag metadata), 24h TTL
-- **Validation**: only `v`-prefixed gitRef entries; HTTPS URLs on `github.com` from trusted orgs
-- **Override**: `FUNC_CLI_QUICKSTART_MANIFEST_URL` env var replaces CDN URL
 
 ## Init and New Command Flow
 
@@ -400,7 +410,15 @@ Each registered initializer also contributes options to `func init` via `GetInit
 
 Help groups stack-specific options under the initializer's `DisplayName` (for example, `.NET` or `Node.js`). Built-in options, bundle options, and options contributed by multiple stacks stay in the general `Options` section, followed by stack headings sorted alphabetically using an ordinal, case-insensitive comparison. Options within each group retain their registration order. `func run` (alias `start`) follows the same grouping using the matching `IProjectStack.DisplayName`, falling back to the contributor's stack ID when no descriptor is registered. Stack IDs are matched case-insensitively. Empty groups and hidden options are omitted.
 
-### `func setup` for Go projects
+### `func setup`
+
+Runtime features without a built-in stack mapping are resolved through their worker
+workload, allowing custom runtimes. If neither an installed compatible worker nor
+a matching catalog version is available, setup reports a feature-resolution error
+and exits nonzero, including with `--check`. Missing worker packages remain optional
+for features with a stack mapping; setup still requires their stack workload.
+
+#### Go projects
 
 When inferring setup features from project configuration, `func setup` maps the Go
 worker runtime `native` to the `go` feature, even before the Go stack is installed.

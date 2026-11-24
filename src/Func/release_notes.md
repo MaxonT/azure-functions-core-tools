@@ -1,10 +1,20 @@
-## Unreleased
+## 5.0.0-preview.7
+
+#### Changes
+
+- Require Python 3.10 or later for local Python projects; Python 3.9 is no longer supported.
+- Move the Azure Functions CLI runtime and build toolchain to .NET 11. Workloads must target .NET 11 to use the updated Abstractions contracts; generated .NET applications still default to `net10.0`.
+- Discover workload-provided template roots and load template host metadata. (#5902, #5903, #5910, #5952)
+- Bundle .NET project and function templates with the .NET stack workload and surface .NET build errors during `func run`. (#5936, #5938, #5954)
+
+## 5.0.0-preview.6
 
 #### Changes
 
 - Allow `func run` and `func start` to use `--port 0` for an OS-assigned available port and report the selected URL in plain, JSON, and dashboard output. Requires an updated host workload that reports its bound address. (#5861)
 - Bind local runs to `127.0.0.1` by default. Support `--address` and `Host.LocalHttpAddress` for selecting another interface, with command-line options taking precedence. Preserve explicit noncanonical addresses in reported URLs. (#5861)
 - Make `func --version` display the semantic version without commit metadata or line wrapping, matching the Version field in `func --verbose`. Preserve the full build identity separately in the verbose Build field. (#5840)
+- Remove the `func quickstart` command and its template browsing and scaffolding functionality. (#5842)
 
 ## 5.0.0-preview.5
 
@@ -12,6 +22,7 @@
 
 #### Changes
 
+- Make `func run` full-screen in supported interactive terminals, with mouse scrolling, bounded log history, and log selection/copy. Ctrl+C copies selected text and otherwise stops the host; plain and JSON output remain available. (#5885)
 - Fix in-place Azure Functions CLI updates failing during post-install verification on Windows by preloading process-launch dependencies before replacing the running single-file executable. Unexpected errors now fall back to the exception type when the message is empty and include full details with `--verbose`. (#5818)
 - Verify publisher trust and signed content before extracting newly acquired workload archives, including RID pointers and implementations. Explicit `workload install` / `update --allow-untrusted` supports unsigned development packages without bypassing workload format checks. Existing installed-content reuse and `FUNC_HOST_CONTENT_ROOT` remain unchanged. (#5759)
 - Include Java and PowerShell stacks in `func setup`, and correctly infer Go setup requirements from the `native` worker runtime. (#5801)
