@@ -53,7 +53,7 @@ public class ForceConfirmationCancellationTests
             resolver.ResolveOrPromptLanguageAsync(Arg.Any<string?>(), provider, manifest, Arg.Any<CancellationToken>()).Returns(_ =>
             {
                 if (gitOnly) cancellation.Cancel();
-                return Task.FromResult<(string?, int?)>(("Python", null));
+                return Task.FromResult<LanguageDescriptor?>(provider.Stack.SupportedLanguages.Single());
             });
             var manifestService = Substitute.For<IQuickstartManifestService>();
             manifestService.GetManifestAsync(Arg.Any<CancellationToken>()).Returns(manifest);
@@ -68,12 +68,12 @@ public class ForceConfirmationCancellationTests
         else
         {
             var initializer = Substitute.For<IProjectInitializer>();
-            initializer.Stack.Returns("python");
-            initializer.DisplayName.Returns("Python");
-            initializer.SupportedLanguages.Returns(_ =>
+            initializer.Stack.Descriptor.Returns(new StackDescriptor("python", "python", "Python"));
+
+            initializer.Stack.SupportedLanguages.Returns(_ =>
             {
                 if (gitOnly && commandConstructed) cancellation.Cancel();
-                return new[] { "python" };
+                return new LanguageDescriptor[] { new("python", "Python") };
             });
             initializer.GetInitOptions(Arg.Any<IInitOptionRegistry>()).Returns([]);
             initializer.InitializeAsync(Arg.Any<InitContext>(), Arg.Any<ParseResult>(), Arg.Any<CancellationToken>())

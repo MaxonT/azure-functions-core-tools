@@ -47,9 +47,9 @@ public class ForceConfirmationRegressionTests(ITestOutputHelper output)
         bool stdoutInput, bool stdoutAnsi, bool stderrInput, bool stderrAnsi, Response response)
     {
         var initializer = Substitute.For<IProjectInitializer>();
-        initializer.Stack.Returns("python");
-        initializer.DisplayName.Returns("Python");
-        initializer.SupportedLanguages.Returns(["python"]);
+        initializer.Stack.Descriptor.Returns(new StackDescriptor("python", "python", "Python"));
+
+        initializer.Stack.SupportedLanguages.Returns([new LanguageDescriptor("python", "Python")]);
         initializer.GetInitOptions(Arg.Any<IInitOptionRegistry>()).Returns([]);
         var localSettings = Substitute.For<ILocalSettingsProvider>();
         localSettings.Get(Arg.Any<DirectoryInfo>()).Returns(LocalSettingsSnapshot.Empty);
@@ -76,8 +76,9 @@ public class ForceConfirmationRegressionTests(ITestOutputHelper output)
         var manifest = new QuickstartManifest([entry]);
         var resolver = Substitute.For<IQuickstartProviderResolver>();
         resolver.SelectProviderAsync(Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(provider);
+        LanguageDescriptor language = provider.Stack.SupportedLanguages.Single();
         resolver.ResolveOrPromptLanguageAsync(Arg.Any<string?>(), provider, manifest, Arg.Any<CancellationToken>())
-            .Returns(("Python", (int?)null));
+            .Returns(language);
         var manifestService = Substitute.For<IQuickstartManifestService>();
         manifestService.GetManifestAsync(Arg.Any<CancellationToken>()).Returns(manifest);
         var scaffolder = Substitute.For<IQuickstartScaffolder>();
